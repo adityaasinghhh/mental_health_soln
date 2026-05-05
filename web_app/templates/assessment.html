@@ -1,0 +1,581 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Assessment - MindWell AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .assessment-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .question-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .rating-option {
+            padding: 15px;
+            margin: 5px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .rating-option:hover {
+            transform: scale(1.05);
+            border-color: #667eea;
+            background: rgba(102,126,234,0.1);
+        }
+        .rating-option.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+        }
+        .btn-next, .btn-submit {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-next:hover, .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102,126,234,0.4);
+        }
+        .progress-bar-custom {
+            height: 10px;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            transition: width 0.3s;
+        }
+        .nlp-textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            resize: vertical;
+            font-size: 16px;
+        }
+        .nlp-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102,126,234,0.3);
+        }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            color: #667eea;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-decoration: none;
+            display: inline-block;
+        }
+        .suggestion-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .crisis-alert {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .severity-normal { background: #10b981; color: white; }
+        .severity-mild { background: #f59e0b; color: white; }
+        .severity-moderate { background: #f97316; color: white; }
+        .severity-severe { background: #ef4444; color: white; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 36px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <a href="/dashboard" class="back-btn"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
+    
+    <div class="container">
+        <div class="assessment-container" id="mainContainer">
+            <!-- Assessment Questions Section -->
+            <div id="questionsSection">
+                <div class="text-center mb-4">
+                    <i class="fas fa-brain fa-4x text-white"></i>
+                    <h1 class="text-white mt-3">Mental Health Assessment</h1>
+                    <p class="text-white-50">Answer honestly for the best insights. This takes 5-7 minutes.</p>
+                </div>
+                
+                <div class="question-card">
+                    <div id="questionContainer"></div>
+                    <div class="text-center mt-4">
+                        <button class="btn-next" onclick="nextQuestion()">
+                            Next <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="progress">
+                        <div id="progressBar" class="progress-bar-custom" style="width: 0%"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small class="text-white" id="stepInfo">Question 1 of 21</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Section (hidden initially) -->
+            <div id="resultsSection" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let psychometricQuestions = [];
+        let nlpQuestions = [];
+        let psychometricAnswers = [];
+        let nlpAnswers = [];
+        let currentQuestion = 0;
+        let totalQuestions = 0;
+        let assessmentResults = null;
+        
+        async function loadQuestions() {
+            try {
+                const response = await fetch('/api/questions');
+                const data = await response.json();
+                psychometricQuestions = data.psychometric;
+                nlpQuestions = data.nlp;
+                totalQuestions = psychometricQuestions.length + nlpQuestions.length;
+                displayQuestion();
+            } catch (error) {
+                console.error('Error loading questions:', error);
+            }
+        }
+        
+        function displayQuestion() {
+            const isPsychometric = currentQuestion < psychometricQuestions.length;
+            const container = document.getElementById('questionContainer');
+            
+            if (isPsychometric) {
+                const q = psychometricQuestions[currentQuestion];
+                const savedAnswer = psychometricAnswers[currentQuestion];
+                
+                container.innerHTML = `
+                    <h3>Question ${currentQuestion + 1} of ${psychometricQuestions.length}</h3>
+                    <p class="lead mb-4">${q.text}</p>
+                    <div class="row g-3">
+                        <div class="col-2">
+                            <div class="rating-option ${savedAnswer === 1 ? 'selected' : ''}" onclick="selectRating(1)">
+                                <strong>1</strong><br>
+                                <small>Never</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="rating-option ${savedAnswer === 2 ? 'selected' : ''}" onclick="selectRating(2)">
+                                <strong>2</strong><br>
+                                <small>Rarely</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="rating-option ${savedAnswer === 3 ? 'selected' : ''}" onclick="selectRating(3)">
+                                <strong>3</strong><br>
+                                <small>Sometimes</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="rating-option ${savedAnswer === 4 ? 'selected' : ''}" onclick="selectRating(4)">
+                                <strong>4</strong><br>
+                                <small>Often</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="rating-option ${savedAnswer === 5 ? 'selected' : ''}" onclick="selectRating(5)">
+                                <strong>5</strong><br>
+                                <small>Always</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const nlpIndex = currentQuestion - psychometricQuestions.length;
+                const q = nlpQuestions[nlpIndex];
+                const savedAnswer = nlpAnswers[nlpIndex];
+                
+                container.innerHTML = `
+                    <h3>Question ${currentQuestion + 1} of ${totalQuestions}</h3>
+                    <p class="lead mb-4">${q.text}</p>
+                    <textarea class="nlp-textarea" id="nlpResponse" rows="6" 
+                        placeholder="Please share your thoughts in detail...">${savedAnswer || ''}</textarea>
+                    <div class="mt-3" id="charCount"></div>
+                `;
+                
+                const textarea = document.getElementById('nlpResponse');
+                if (textarea) {
+                    textarea.addEventListener('input', updateCharCount);
+                    updateCharCount();
+                }
+            }
+            updateProgress();
+        }
+        
+        function updateCharCount() {
+            const textarea = document.getElementById('nlpResponse');
+            if (textarea) {
+                const count = textarea.value.length;
+                const indicator = document.getElementById('charCount');
+                if (count < 15) {
+                    indicator.innerHTML = `<i class="fas fa-info-circle"></i> ${count}/15 characters minimum`;
+                    indicator.style.color = '#ef4444';
+                } else {
+                    indicator.innerHTML = `<i class="fas fa-check-circle"></i> ${count} characters - Good!`;
+                    indicator.style.color = '#10b981';
+                }
+            }
+        }
+        
+        function selectRating(rating) {
+            psychometricAnswers[currentQuestion] = rating;
+            displayQuestion();
+            setTimeout(() => nextQuestion(), 300);
+        }
+        
+        function saveNlpResponse() {
+            const response = document.getElementById('nlpResponse')?.value || '';
+            const nlpIndex = currentQuestion - psychometricQuestions.length;
+            if (nlpIndex >= 0) {
+                nlpAnswers[nlpIndex] = response;
+            }
+        }
+        
+        function nextQuestion() {
+            const isPsychometric = currentQuestion < psychometricQuestions.length;
+            
+            if (isPsychometric) {
+                if (!psychometricAnswers[currentQuestion]) {
+                    alert('Please select a rating (1-5) before continuing.');
+                    return;
+                }
+            } else {
+                const response = document.getElementById('nlpResponse')?.value || '';
+                if (response.length < 15) {
+                    alert('Please provide a more detailed response (minimum 15 characters).');
+                    return;
+                }
+                saveNlpResponse();
+            }
+            
+            currentQuestion++;
+            
+            if (currentQuestion < totalQuestions) {
+                displayQuestion();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                submitAssessment();
+            }
+        }
+        
+        function updateProgress() {
+            const percent = ((currentQuestion + 1) / totalQuestions) * 100;
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = `${percent}%`;
+            document.getElementById('stepInfo').textContent = `Question ${currentQuestion + 1} of ${totalQuestions}`;
+        }
+        
+        async function submitAssessment() {
+            if (currentQuestion === totalQuestions - 1) {
+                const response = document.getElementById('nlpResponse')?.value || '';
+                if (response.length >= 15) {
+                    const nlpIndex = currentQuestion - psychometricQuestions.length;
+                    nlpAnswers[nlpIndex] = response;
+                }
+            }
+            
+            const data = {
+                psychometric: psychometricAnswers,
+                nlp: nlpAnswers
+            };
+            
+            document.getElementById('questionContainer').innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+                    <h4 class="mt-3">Analyzing your responses...</h4>
+                    <p class="text-muted">Our AI is processing your answers</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                assessmentResults = await response.json();
+                displaySuggestions();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error submitting assessment. Please try again.');
+            }
+        }
+        
+        function displaySuggestions() {
+            const results = assessmentResults;
+            const scores = results.psychometric.scores;
+            const total = results.psychometric.total;
+            const overall = results.psychometric.overall_status;
+            const nlpScore = results.nlp.score;
+            const nlpTone = results.nlp.tone;
+            const recommendations = results.recommendations;
+            
+            let severityColor = '';
+            if (overall === 'Normal') severityColor = 'severity-normal';
+            else if (overall === 'Mild') severityColor = 'severity-mild';
+            else if (overall === 'Moderate') severityColor = 'severity-moderate';
+            else severityColor = 'severity-severe';
+            
+            let crisisHtml = '';
+            if (recommendations.crisis) {
+                crisisHtml = `
+                    <div class="crisis-alert">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <h3>⚠️ URGENT SUPPORT NEEDED</h3>
+                        <p>Your results indicate you may need immediate support. Please reach out to a mental health professional.</p>
+                        <hr>
+                        <h5>📞 Crisis Helplines:</h5>
+                        <p>• 988 - Suicide & Crisis Lifeline (24/7)<br>
+                        • Crisis Text Line: Text HOME to 741741<br>
+                        • Emergency Services: 911</p>
+                    </div>
+                `;
+            }
+            
+            const suggestionsHtml = `
+                <div class="text-center mb-4">
+                    <i class="fas fa-chart-line fa-4x text-white"></i>
+                    <h1 class="text-white mt-3">Your Assessment Results</h1>
+                    <p class="text-white-50">Personalized insights based on your responses</p>
+                </div>
+                
+                ${crisisHtml}
+                
+                <!-- Overall Status -->
+                <div class="suggestion-card">
+                    <div class="text-center">
+                        <div class="score-circle ${severityColor} mx-auto">
+                            ${total}/80
+                        </div>
+                        <h3 class="mt-3">Overall Status: ${overall}</h3>
+                        <p class="text-muted">Combined with NLP Sentiment: ${nlpTone}</p>
+                    </div>
+                </div>
+                
+                <!-- Category Scores -->
+                <div class="suggestion-card">
+                    <h4><i class="fas fa-chart-pie me-2"></i>Category Breakdown</h4>
+                    <div class="row mt-3">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <strong>Anxiety</strong>
+                                <h3>${scores.anxiety}/20</h3>
+                                <span class="badge ${scores.anxiety <= 8 ? 'bg-success' : scores.anxiety <= 12 ? 'bg-warning' : 'bg-danger'}">
+                                    ${scores.anxiety <= 8 ? 'Low' : scores.anxiety <= 12 ? 'Mild' : 'High'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <strong>Depression</strong>
+                                <h3>${scores.depression}/20</h3>
+                                <span class="badge ${scores.depression <= 8 ? 'bg-success' : scores.depression <= 12 ? 'bg-warning' : 'bg-danger'}">
+                                    ${scores.depression <= 8 ? 'Low' : scores.depression <= 12 ? 'Mild' : 'High'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <strong>Stress</strong>
+                                <h3>${scores.stress}/20</h3>
+                                <span class="badge ${scores.stress <= 8 ? 'bg-success' : scores.stress <= 12 ? 'bg-warning' : 'bg-danger'}">
+                                    ${scores.stress <= 8 ? 'Low' : scores.stress <= 12 ? 'Mild' : 'High'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <strong>General</strong>
+                                <h3>${scores.general}/20</h3>
+                                <span class="badge ${scores.general <= 8 ? 'bg-success' : scores.general <= 12 ? 'bg-warning' : 'bg-danger'}">
+                                    ${scores.general <= 8 ? 'Low' : scores.general <= 12 ? 'Mild' : 'High'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- NLP Analysis -->
+                <div class="suggestion-card">
+                    <h4><i class="fas fa-comment-dots me-2"></i>Sentiment Analysis</h4>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-success" style="width: ${results.nlp.vader_scores.positive * 100}%">
+                                    Positive ${(results.nlp.vader_scores.positive * 100).toFixed(1)}%
+                                </div>
+                                <div class="progress-bar bg-danger" style="width: ${results.nlp.vader_scores.negative * 100}%">
+                                    Negative ${(results.nlp.vader_scores.negative * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Tone:</strong> ${nlpTone}</p>
+                            <p><strong>Sentiment Score:</strong> ${nlpScore.toFixed(2)}</p>
+                            <p><strong>Subjectivity:</strong> ${(results.nlp.subjectivity * 100).toFixed(1)}%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommended Exercises -->
+                ${recommendations.exercises && recommendations.exercises.length > 0 ? `
+                <div class="suggestion-card">
+                    <h4><i class="fas fa-dumbbell me-2"></i>Recommended Exercises</h4>
+                    <ul class="list-group list-group-flush">
+                        ${recommendations.exercises.map(ex => `<li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i>${ex}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                <!-- Lifestyle Tips -->
+                ${recommendations.lifestyle_tips && recommendations.lifestyle_tips.length > 0 ? `
+                <div class="suggestion-card">
+                    <h4><i class="fas fa-leaf me-2"></i>Lifestyle Tips</h4>
+                    <ul class="list-group list-group-flush">
+                        ${recommendations.lifestyle_tips.map(tip => `<li class="list-group-item"><i class="fas fa-heart text-primary me-2"></i>${tip}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                <!-- Quick Stress Relief -->
+                <div class="suggestion-card">
+                    <h4><i class="fas fa-heartbeat me-2"></i>Quick Stress Relief Techniques</h4>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded mb-2">
+                                <strong>🧘 4-7-8 Breathing</strong>
+                                <p class="small mb-0">Inhale 4 sec → Hold 7 sec → Exhale 8 sec<br>Repeat 5 times</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded mb-2">
+                                <strong>👁️ 5-4-3-2-1 Grounding</strong>
+                                <p class="small mb-0">5 things you see → 4 you feel → 3 you hear → 2 you smell → 1 you taste</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded mb-2">
+                                <strong>☀️ Morning Sunlight</strong>
+                                <p class="small mb-0">10 minutes of sunlight within 1 hour of waking</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded mb-2">
+                                <strong>📝 Gratitude Journal</strong>
+                                <p class="small mb-0">Write 3 things you're grateful for today</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resources -->
+                <div class="suggestion-card">
+                    <h4><i class="fas fa-hands-helping me-2"></i>Helpful Resources</h4>
+                    ${recommendations.resources.map(res => `
+                        <div class="mt-3">
+                            <strong>${res.name}</strong><br>
+                            ${res.items.map(item => `<span class="badge bg-info m-1">${item}</span>`).join('')}
+                        </div>
+                    `).join('')}
+                    <hr>
+                    <div class="text-center">
+                        <h6>📱 Free Mental Health Apps</h6>
+                        <p>Calm · Headspace · Sanvello · Woebot · Insight Timer</p>
+                        <h6>🌐 Websites</h6>
+                        <p>NAMI.org · ADAA.org · MentalHealthAmerica.net</p>
+                        <h6>📞 Helplines</h6>
+                        <p>SAMHSA: 1-800-662-4357 · NAMI: 1-800-950-6264</p>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="suggestion-card text-center">
+                    <button class="btn-next" onclick="window.location.href='/dashboard'">
+                        <i class="fas fa-chart-line me-2"></i>View Dashboard
+                    </button>
+                    <button class="btn-next ms-2" onclick="window.location.href='/assessment'">
+                        <i class="fas fa-redo me-2"></i>Take Again
+                    </button>
+                    <button class="btn-next ms-2" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Print Results
+                    </button>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <small class="text-white-50">
+                        <i class="fas fa-shield-alt"></i> This is an AI screening tool, not a clinical diagnosis.
+                        If feelings persist for more than 2 weeks, please consult a mental health professional.
+                    </small>
+                </div>
+            `;
+            
+            // Hide questions section and show results
+            document.getElementById('questionsSection').style.display = 'none';
+            document.getElementById('resultsSection').innerHTML = suggestionsHtml;
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+        
+        loadQuestions();
+    </script>
+</body>
+</html>

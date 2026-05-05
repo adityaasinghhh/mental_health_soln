@@ -1,0 +1,521 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Prediction System | AI-Powered Assessment</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container-custom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 20px 30px;
+            font-weight: 600;
+        }
+        
+        .question-card {
+            background: var(--light);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .rating-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .rating-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .rating-btn.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        
+        .rating-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .progress-container {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .btn-next {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 12px 40px;
+            border-radius: 50px;
+            font-weight: 600;
+            border: none;
+        }
+        
+        .btn-next:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(99,102,241,0.4);
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .severity-normal { background: #10b981; color: white; }
+        .severity-mild { background: #f59e0b; color: white; }
+        .severity-moderate { background: #f97316; color: white; }
+        .severity-severe { background: #ef4444; color: white; }
+        
+        .sentiment-positive { color: #10b981; }
+        .sentiment-neutral { color: #6b7280; }
+        .sentiment-negative { color: #ef4444; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-custom">
+        <!-- Welcome Section -->
+        <div id="welcomeSection" class="card fade-in">
+            <div class="card-header text-center">
+                <h1><i class="fas fa-brain me-2"></i>Mental Health Prediction System</h1>
+                <p class="mb-0">AI-Powered Mental Health Assessment Tool</p>
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-8 mx-auto text-center">
+                        <i class="fas fa-heartbeat" style="font-size: 80px; color: var(--primary);"></i>
+                        <h3 class="mt-3">Welcome to Your Mental Health Assessment</h3>
+                        <p class="text-muted">This tool provides a preliminary mental health assessment based on:</p>
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <i class="fas fa-clipboard-list fa-2x text-primary"></i>
+                                    <h5>Psychometric Test</h5>
+                                    <small>16 standardized questions</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <i class="fas fa-comment-dots fa-2x text-primary"></i>
+                                    <h5>NLP Analysis</h5>
+                                    <small>Sentiment & emotion detection</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <i class="fas fa-chart-line fa-2x text-primary"></i>
+                                    <h5>AI Recommendations</h5>
+                                    <small>Personalized suggestions</small>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-next mt-4" onclick="startAssessment()">
+                            <i class="fas fa-play me-2"></i>Start Assessment
+                        </button>
+                        <p class="text-muted mt-4 small">
+                            <i class="fas fa-shield-alt"></i> Your responses are anonymous and confidential
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Assessment Section -->
+        <div id="assessmentSection" style="display: none;">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="progress-container">
+                        <h5><i class="fas fa-tasks me-2"></i>Progress</h5>
+                        <div class="progress mb-3" style="height: 30px;">
+                            <div id="progressBar" class="progress-bar bg-primary" style="width: 0%;">0%</div>
+                        </div>
+                        <p><span id="currentStep">1</span>/<span id="totalSteps">21</span> Questions</p>
+                        <div id="stepInfo">
+                            <small class="text-muted">Psychometric Questions (1-16)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 id="sectionTitle" class="mb-0">Psychometric Assessment</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="questionContainer"></div>
+                            <div class="text-center mt-4">
+                                <button class="btn btn-next" onclick="nextQuestion()">
+                                    Next <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div id="resultsSection" style="display: none;">
+            <div class="loading" id="loadingResults">
+                <div class="spinner-border text-light" role="status"></div>
+                <p class="text-white mt-3">Analyzing your responses...</p>
+            </div>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        let psychometricQuestions = [];
+        let nlpQuestions = [];
+        let psychometricAnswers = [];
+        let nlpAnswers = [];
+        let currentQuestion = 0;
+        let totalQuestions = 0;
+        
+        // Load questions on page load
+        fetch('/api/questions')
+            .then(res => res.json())
+            .then(data => {
+                psychometricQuestions = data.psychometric;
+                nlpQuestions = data.nlp;
+                totalQuestions = psychometricQuestions.length + nlpQuestions.length;
+                document.getElementById('totalSteps').textContent = totalQuestions;
+            });
+        
+        function startAssessment() {
+            document.getElementById('welcomeSection').style.display = 'none';
+            document.getElementById('assessmentSection').style.display = 'block';
+            displayQuestion();
+        }
+        
+        function displayQuestion() {
+            const isPsychometric = currentQuestion < psychometricQuestions.length;
+            const container = document.getElementById('questionContainer');
+            const stepInfo = document.getElementById('stepInfo');
+            const sectionTitle = document.getElementById('sectionTitle');
+            
+            if (isPsychometric) {
+                sectionTitle.innerHTML = '<i class="fas fa-clipboard-list me-2"></i>Psychometric Assessment';
+                stepInfo.innerHTML = '<small class="text-muted">Rate each statement from 1-5</small>';
+                const q = psychometricQuestions[currentQuestion];
+                const savedAnswer = psychometricAnswers[currentQuestion];
+                
+                container.innerHTML = `
+                    <div class="question-card">
+                        <h5>Question ${currentQuestion + 1}/${psychometricQuestions.length}</h5>
+                        <p class="lead">${q.text}</p>
+                        <div class="rating-buttons">
+                            ${[1,2,3,4,5].map(num => `
+                                <div class="rating-btn ${savedAnswer === num ? 'selected' : ''}" onclick="selectRating(${num})">
+                                    <strong>${num}</strong><br>
+                                    <small>${num === 1 ? 'Never' : num === 2 ? 'Rarely' : num === 3 ? 'Sometimes' : num === 4 ? 'Often' : 'Always'}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                sectionTitle.innerHTML = '<i class="fas fa-comment-dots me-2"></i>NLP Emotional Assessment';
+                stepInfo.innerHTML = '<small class="text-muted">Please answer in detail (minimum 15 characters)</small>';
+                const nlpIndex = currentQuestion - psychometricQuestions.length;
+                const q = nlpQuestions[nlpIndex];
+                const savedAnswer = nlpAnswers[nlpIndex];
+                
+                container.innerHTML = `
+                    <div class="question-card">
+                        <h5>Question ${currentQuestion + 1}/${totalQuestions}</h5>
+                        <p class="lead">${q.text}</p>
+                        <textarea class="form-control" id="nlpResponse" rows="4" 
+                            placeholder="Please share your thoughts in detail..." 
+                            oninput="saveNlpResponse()">${savedAnswer || ''}</textarea>
+                        <small class="text-muted mt-2">Please provide at least 15 characters for accurate analysis</small>
+                    </div>
+                `;
+            }
+            
+            updateProgress();
+        }
+        
+        function selectRating(rating) {
+            psychometricAnswers[currentQuestion] = rating;
+            // Update UI to show selected
+            document.querySelectorAll('.rating-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.innerText.includes(rating)) {
+                    btn.classList.add('selected');
+                }
+            });
+        }
+        
+        function saveNlpResponse() {
+            const response = document.getElementById('nlpResponse')?.value || '';
+            const nlpIndex = currentQuestion - psychometricQuestions.length;
+            if (nlpIndex >= 0) {
+                nlpAnswers[nlpIndex] = response;
+            }
+        }
+        
+        function nextQuestion() {
+            const isPsychometric = currentQuestion < psychometricQuestions.length;
+            
+            if (isPsychometric) {
+                if (!psychometricAnswers[currentQuestion]) {
+                    alert('Please select a rating (1-5) before continuing.');
+                    return;
+                }
+            } else {
+                const nlpIndex = currentQuestion - psychometricQuestions.length;
+                const response = document.getElementById('nlpResponse')?.value || '';
+                if (response.length < 15) {
+                    alert('Please provide a more detailed response (at least 15 characters).');
+                    return;
+                }
+                nlpAnswers[nlpIndex] = response;
+            }
+            
+            currentQuestion++;
+            
+            if (currentQuestion < totalQuestions) {
+                displayQuestion();
+            } else {
+                submitAssessment();
+            }
+        }
+        
+        function updateProgress() {
+            const percent = ((currentQuestion + 1) / totalQuestions) * 100;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+            document.getElementById('progressBar').textContent = `${Math.round(percent)}%`;
+            document.getElementById('currentStep').textContent = currentQuestion + 1;
+        }
+        
+        function submitAssessment() {
+            document.getElementById('assessmentSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('loadingResults').style.display = 'block';
+            
+            const data = {
+                psychometric: psychometricAnswers,
+                nlp: nlpAnswers
+            };
+            
+            fetch('/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loadingResults').innerHTML = '<div class="alert alert-danger">Error analyzing results. Please try again.</div>';
+            });
+        }
+        
+        function displayResults(data) {
+            document.getElementById('loadingResults').style.display = 'none';
+            const container = document.getElementById('resultsContent');
+            
+            const severityClass = `severity-${data.combined.status.toLowerCase()}`;
+            const sentimentClass = data.nlp.score >= 0 ? 'sentiment-positive' : 'sentiment-negative';
+            
+            let crisisAlert = '';
+            if (data.recommendations.crisis) {
+                crisisAlert = `
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>URGENT SUPPORT NEEDED</strong><br>
+                        ${data.recommendations.immediate_actions.map(action => `<div>${action}</div>`).join('')}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = `
+                ${crisisAlert}
+                
+                <div class="result-card fade-in">
+                    <h3><i class="fas fa-chart-pie me-2"></i>Combined Assessment</h3>
+                    <div class="row mt-3">
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 rounded ${severityClass}">
+                                <h5>Combined Status</h5>
+                                <h2>${data.combined.status}</h2>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 bg-light rounded">
+                                <h5>Psychometric Score</h5>
+                                <h2>${data.psychometric.total}/80</h2>
+                                <small>${data.combined.psychometric_percent.toFixed(1)}%</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 bg-light rounded">
+                                <h5>NLP Sentiment</h5>
+                                <h2 class="${sentimentClass}">${data.nlp.score.toFixed(2)}</h2>
+                                <small>${data.nlp.tone}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-card fade-in">
+                    <h4><i class="fas fa-clipboard-list me-2"></i>Psychometric Breakdown</h4>
+                    <div class="row mt-3">
+                        ${Object.entries(data.psychometric.results).map(([cat, result]) => `
+                            <div class="col-md-3 mb-3">
+                                <div class="p-3 bg-light rounded text-center">
+                                    <strong>${cat.charAt(0).toUpperCase() + cat.slice(1)}</strong><br>
+                                    <h3>${result.score}/20</h3>
+                                    <span class="badge ${result.level === 'Low' ? 'bg-success' : result.level === 'Mild' ? 'bg-warning' : 'bg-danger'}">${result.level}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="result-card fade-in">
+                    <h4><i class="fas fa-comment-dots me-2"></i>NLP Analysis Details</h4>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h5>Sentiment Breakdown</h5>
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div class="progress-bar bg-success" style="width: ${data.nlp.vader_scores.positive * 100}%">
+                                    Positive ${(data.nlp.vader_scores.positive * 100).toFixed(1)}%
+                                </div>
+                                <div class="progress-bar bg-danger" style="width: ${data.nlp.vader_scores.negative * 100}%">
+                                    Negative ${(data.nlp.vader_scores.negative * 100).toFixed(1)}%
+                                </div>
+                                <div class="progress-bar bg-secondary" style="width: ${data.nlp.vader_scores.neutral * 100}%">
+                                    Neutral ${(data.nlp.vader_scores.neutral * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Text Metrics</h5>
+                            <p><strong>Subjectivity:</strong> ${(data.nlp.subjectivity * 100).toFixed(1)}%</p>
+                            <p><strong>Polarity:</strong> ${data.nlp.polarity.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                ${data.recommendations.exercises.length > 0 ? `
+                <div class="result-card fade-in">
+                    <h4><i class="fas fa-dumbbell me-2"></i>Recommended Exercises</h4>
+                    <ul class="list-group list-group-flush">
+                        ${data.recommendations.exercises.map(ex => `<li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i>${ex}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                ${data.recommendations.lifestyle_tips.length > 0 ? `
+                <div class="result-card fade-in">
+                    <h4><i class="fas fa-leaf me-2"></i>Lifestyle Tips</h4>
+                    <ul class="list-group list-group-flush">
+                        ${data.recommendations.lifestyle_tips.map(tip => `<li class="list-group-item"><i class="fas fa-heart text-primary me-2"></i>${tip}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                <div class="result-card fade-in">
+                    <h4><i class="fas fa-resources me-2"></i>Resources & Support</h4>
+                    ${data.recommendations.resources.map(res => `
+                        <div class="mt-3">
+                            <strong>${res.name}</strong><br>
+                            ${res.items.map(item => `<span class="badge bg-info me-2">${item}</span>`).join('')}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="result-card fade-in">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Important Reminder:</strong> This is an AI screening tool, not a clinical diagnosis.
+                        If feelings persist for more than 2 weeks, please consult a mental health professional.
+                    </div>
+                    <button class="btn btn-next" onclick="location.reload()">
+                        <i class="fas fa-redo me-2"></i>Start New Assessment
+                    </button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
